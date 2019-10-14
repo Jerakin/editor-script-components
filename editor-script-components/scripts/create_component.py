@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Editor script to create a component for the provided resource
 """

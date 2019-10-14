@@ -2,6 +2,15 @@
 
 local M = {}
 
+-- Need to source the bash_profile ourselves to add the users 
+-- environment variables such as his extended PATH
+local function command_workaround()
+    if editor.platform == "x86_64-darwin" then
+        return "./editor-script-components/scripts/extend_path.sh"
+    end
+    return "python"
+end
+
 local function unpack(t, i)
     i = i or 1
     if t[i] ~= nil then
@@ -17,23 +26,23 @@ local function many_run_function(opts)
     local paths = {}
     if opts and opts.selection then
         for _, id in pairs(opts.selection) do
-            table.insert(paths, editor.get(id, "path"))
+            table.insert(paths, '"' .. editor.get(opts.selection, "path") .. '"')
         end
     end
     return {
         {
             action = "shell", 
-            command = {"python", "./editor-script-components/scripts/create_component.py", unpack(paths)}
+            command = {command_workaround(), "./editor-script-components/scripts/create_component.py", unpack(paths)}
         }
     }
 end
 
 local function single_run_function(opts)
-    local path = editor.get(node_id, "path")
+    local path = '"' .. editor.get(opts.selection, "path") .. '"'
     return {
         {
             action = "shell", 
-            command = {"python", "./editor-script-components/scripts/create_component.py", path}
+            command = {command_workaround(), "./editor-script-components/scripts/create_component.py", path}
         }
     }
 end
