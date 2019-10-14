@@ -1,0 +1,109 @@
+--local utils = require "editor.utils"
+
+local M = {}
+
+local function unpack(t, i)
+    i = i or 1
+    if t[i] ~= nil then
+        return t[i], unpack(t, i + 1)
+    end
+end
+
+local function ends_with(path, suffix)
+    return path:find(suffix, nil, true) or path:find(suffix, nil, true)
+end
+
+local function many_run_function(opts)
+    local paths = {}
+    if opts and opts.selection then
+        for _, id in pairs(opts.selection) do
+            table.insert(paths, editor.get(id, "path"))
+        end
+    end
+    return {
+        {
+            action = "shell", 
+            command = {"python", "./editor/scripts/create_component.py", unpack(paths)}
+        }
+    }
+end
+
+local function single_run_function(opts)
+    local path = editor.get(node_id, "path")
+    return {
+        {
+            action = "shell", 
+            command = {"python", "./editor/scripts/create_component.py", path}
+        }
+    }
+end
+
+local function check_file_suffix(opts, suffix)
+    for _, id in pairs(opts.selection) do
+        local path = editor.get(id, "path")
+        if ends_with(path, suffix) then
+        else
+            return false
+        end
+    end
+    return true
+end
+
+function M.get_commands()
+    return {
+        {
+            label="Create New Atlas With...",
+            locations = {"Assets"},
+            active = function(opts)
+                return check_file_suffix(opts, ".png")
+            end,
+            query = {
+                selection = {type = "resource", cardinality = "many"}
+            },
+            run = many_run_function
+        },
+        {
+            label="Create Sound From...",
+            locations = {"Assets"},
+            active = function(opts)
+                for _, id in pairs(opts.selection) do
+                    local path = editor.get(id, "path")
+                    if ends_with(path, ".wav") or ends_with(path, ".ogg") then
+                    else
+                        return false
+                    end
+                end
+                return true
+            end,
+            query = {
+                selection = {type = "resource", cardinality = "many"}
+            },
+            run = many_run_function
+        },
+        {
+            label="Create Spine Scene From...",
+            locations = {"Assets"},
+            active = function(opts)
+                return check_file_suffix(opts, ".json")
+            end,
+            query = {
+                selection = {type = "resource", cardinality = "many"}
+            },
+            run = many_run_function
+        },
+        {
+            label="Create Spine Model From...",
+            locations = {"Assets"},
+            active = function(opts)
+                return check_file_suffix(opts, ".spinescene")
+            end,
+            query = {
+                selection = {type = "resource", cardinality = "many"}
+            },
+            run = many_run_function
+        }
+    }
+    
+end
+
+return M
