@@ -23,7 +23,7 @@ local function many_run_function(opts)
     return {
         {
             action = "shell", 
-            command = {"python", "./editor/scripts/create_component.py", unpack(paths)}
+            command = {"python", "./editor-script-components/scripts/create_component.py", unpack(paths)}
         }
     }
 end
@@ -33,7 +33,7 @@ local function single_run_function(opts)
     return {
         {
             action = "shell", 
-            command = {"python", "./editor/scripts/create_component.py", path}
+            command = {"python", "./editor-script-components/scripts/create_component.py", path}
         }
     }
 end
