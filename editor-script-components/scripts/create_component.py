@@ -2,21 +2,33 @@
 """
 Editor script to create a component for the provided resource
 """
+from os.path import exists
+
+_log_file = "python_log.txt"
+
+if exists(_log_file):
+    import sys
+    import traceback
+
+    def log_exception(a, b, tb):
+        with open("python_log.txt", "a") as fp:
+            traceback.print_tb(tb, file=fp)
+
+    sys.stdout = open("python_log.txt", 'w')
+    sys.excepthook = log_exception
+
 from pathlib import Path
 import deftree
 import sys
 
-# If we need to do some debug printing
-# sys.stdout = open(Path("python_log.txt"), 'w')
-
-
-_anchor = Path("/").anchor
 
 def _fix_path(path, suffix):
     """We have to remove the anchor if there is one"""
+    _anchor = Path("/").anchor
     if path.anchor == _anchor:
         path = Path(str(path)[1:])
     return Path().cwd() / path.with_suffix(suffix)
+
 
 def sound(path):
     tree = deftree.DefTree()
@@ -29,6 +41,7 @@ def sound(path):
     root.add_attribute("speed", 1.0)
     tree.write(_fix_path(path, ".sound"))
 
+
 def spine_scene(path):
     tree = deftree.DefTree()
     root = tree.get_root()
@@ -37,6 +50,7 @@ def spine_scene(path):
     root.add_attribute("sample_rate", 30)
     tree.write(_fix_path(path, ".spinescene"))
 
+
 def spine_model(path):
     tree = deftree.DefTree()
     root = tree.get_root()
@@ -44,6 +58,7 @@ def spine_model(path):
     root.add_attribute("default_animation", "")
     root.add_attribute("skin", "")
     tree.write(_fix_path(path, ".spinemodel"))
+
 
 def atlas(paths):
     first_path = paths[0]
@@ -56,17 +71,20 @@ def atlas(paths):
     root.add_attribute("extrude_borders", 2)
     root.add_attribute("inner_padding", 0)
 
+    _anchor = Path("/").anchor
     if first_path.anchor == _anchor:
         first_path = Path(str(first_path)[1:])
     first_path = Path().cwd() / first_path.with_name("NEW_ATLAS.atlas")
 
     tree.write(first_path)
 
+
 resource_map = {".wav": sound,
                 ".ogg": sound,
-                ".json":spine_scene,
-                ".spinescene":spine_model
+                ".json": spine_scene,
+                ".spinescene": spine_model
                 }
+
 
 def main(paths):
     paths =[Path(path) for path in paths]
@@ -78,6 +96,6 @@ def main(paths):
             if path.suffix in resource_map:
                 resource_map[path.suffix](path)
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
-
