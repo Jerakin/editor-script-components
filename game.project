@@ -1,6 +1,6 @@
 [project]
-title = editor-script--components
+title = editor-script-components
 
 [library]
-include_dirs = editor-script--components
+include_dirs = editor-script-components
 
