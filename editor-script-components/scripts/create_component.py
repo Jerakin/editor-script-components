@@ -2,21 +2,6 @@
 """
 Editor script to create a component for the provided resource
 """
-from os.path import exists
-
-_log_file = "python_log.txt"
-
-if exists(_log_file):
-    import sys
-    import traceback
-
-    def log_exception(a, b, tb):
-        with open("python_log.txt", "a") as fp:
-            traceback.print_tb(tb, file=fp)
-
-    sys.stdout = open("python_log.txt", 'w')
-    sys.excepthook = log_exception
-
 from pathlib import Path
 import deftree
 import sys
@@ -87,7 +72,7 @@ resource_map = {".wav": sound,
 
 
 def main(paths):
-    paths =[Path(path) for path in paths]
+    paths = [Path(path) for path in paths]
     if len([path for path in paths if path.suffix == ".png"]) == len(paths):
         atlas(paths)
     else:
