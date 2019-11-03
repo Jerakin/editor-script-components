@@ -32,7 +32,7 @@ local function many_run_function(opts)
     return {
         {
             action = "shell", 
-            command = {command_workaround(), "-u", "-c", edit/editor-script-components/scripts/create_component.py", "text"), unpack(paths)}
+            command = {command_workaround(), "-u", "-c", editor.get("/editor-script-components/scripts/create_component.py", "text"), unpack(paths)}
         }
     }
 end
