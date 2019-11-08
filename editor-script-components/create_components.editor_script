@@ -1,76 +1,81 @@
---local utils = require "editor.utils"
+local file_templates = require "editor-script-components.file_templates"
 
 local M = {}
-
--- Need to source the bash_profile ourselves to add the users 
--- environment variables such as his extended PATH
-local function command_workaround()
-    if editor.platform == "x86_64-darwin" then
-        return "./editor-script-components/scripts/extend_path.sh"
-    end
-    return "python"
-end
-
-local function unpack(t, i)
-    i = i or 1
-    if t[i] ~= nil then
-        return t[i], unpack(t, i + 1)
-    end
-end
 
 local function ends_with(path, suffix)
     return path:find(suffix, nil, true) or path:find(suffix, nil, true)
 end
 
-local function many_run_function(opts)
+local function path_segments(path)
+    return string.match(path, "(.-)([^\\/]-%.?([^%.\\/]*))$")
+end
+
+local function name_ext(file_name)
+    return string.match(file_name, "(.+)%..+")
+end
+
+local function create_multiple(opts)
     local paths = {}
     if opts and opts.selection then
         for _, id in pairs(opts.selection) do
-            table.insert(paths, '"' .. editor.get(opts.selection, "path") .. '"')
+            local path = editor.get(id, "path")
+            local base_path, file_name, ext = path_segments(path)
+            local name = name_ext(file_name)
+            
+            local extension = ""
+            local string = ""
+            if ext == "spinescene" then
+                string = file_templates.spine_model(path)
+                extension = ".spinemodel"
+            elseif ext == "wav" or ext == "ogg" then
+                string = file_templates.sound(path)
+                extension = ".sound"
+            end
+            
+            local file = io.open("." .. base_path .. name .. extension, "w")
+            file:write(string)
+            file:close()
         end
     end
-    return {
-        {
-            action = "shell", 
-            command = {command_workaround(), "-u", "-c", editor.get("/editor-script-components/scripts/create_component.py", "text"), unpack(paths)}
-        }
-    }
 end
 
-local function single_run_function(opts)
-    local path = '"' .. editor.get(opts.selection, "path") .. '"'
-    return {
-        {
-            action = "shell", 
-            command = {command_workaround(), "-u", "-c", editor.get("/editor-script-components/scripts/create_component.py", "text"), path}
-        }
-    }
-end
+
+
 
 local function check_file_suffix(opts, suffix)
     for _, id in pairs(opts.selection) do
         local path = editor.get(id, "path")
-        if ends_with(path, suffix) then
-        else
+        if not ends_with(path, suffix) then
             return false
         end
     end
     return true
 end
 
+local function create_spine_scene(opts)
+    local paths = {}
+    local json_file
+    local atlas_file
+    for _, id in pairs(opts.selection) do
+        local path = editor.get(id, "path")
+        if ends_with(path, ".json") then
+            json_file = path
+        else
+            atlas_file = path
+        end
+        table.insert(paths, path)
+    end
+    local base, file_name, ext =  path_segments(json_file)
+    local name = name_ext(file_name)
+    local string = file_templates.spine_scene(json_file, atlas_file)
+
+    local file = io.open("." .. base .. name .. ".spinescene", "w")
+    file:write(string)
+    file:close()
+end
+
 function M.get_commands()
     return {
-        {
-            label="Create New Atlas With...",
-            locations = {"Assets"},
-            active = function(opts)
-                return check_file_suffix(opts, ".png")
-            end,
-            query = {
-                selection = {type = "resource", cardinality = "many"}
-            },
-            run = many_run_function
-        },
         {
             label="Create Sound From...",
             locations = {"Assets"},
@@ -87,18 +92,36 @@ function M.get_commands()
             query = {
                 selection = {type = "resource", cardinality = "many"}
             },
-            run = many_run_function
+            run = create_multiple
         },
         {
             label="Create Spine Scene From...",
             locations = {"Assets"},
             active = function(opts)
-                return check_file_suffix(opts, ".json")
+                for _, id in pairs(opts.selection) do
+                    local path = editor.get(id, "path")
+                    local is_json = false
+                    local is_atlas = false
+                    if ends_with(path, ".json") then 
+                        if is_json then
+                            return false
+                        end
+                        is_json = true
+                    elseif ends_with(path, ".atlas") then
+                        if is_atlas then 
+                            return false
+                        end
+                        is_atlas = true
+                    else
+                        return false
+                    end
+                end
+                return true
             end,
             query = {
                 selection = {type = "resource", cardinality = "many"}
             },
-            run = many_run_function
+            run = create_spine_scene
         },
         {
             label="Create Spine Model From...",
@@ -109,7 +132,7 @@ function M.get_commands()
             query = {
                 selection = {type = "resource", cardinality = "many"}
             },
-            run = many_run_function
+            run = create_multiple
         }
     }
     
